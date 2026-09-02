@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/microsoft/go-sqlcmd/internal/buffer"
+	internalconfig "github.com/microsoft/go-sqlcmd/internal/config"
 	"github.com/microsoft/go-sqlcmd/pkg/console"
 
 	"github.com/microsoft/go-sqlcmd/cmd/modern/sqlconfig"
@@ -51,10 +52,8 @@ func (m *mssql) Connect(
 		if user.AuthenticationType == "basic" {
 			connect.UseTrustedConnection = false
 			connect.UserName = user.BasicAuth.Username
-			connect.Password = decryptCallback(
-				user.BasicAuth.Password,
-				user.BasicAuth.PasswordEncryption,
-			)
+			connect.Password = internalconfig.Password(
+				*user, endpoint.EndpointDetails.Address, endpoint.EndpointDetails.Port)
 		} else {
 			panic("Authentication not supported")
 		}

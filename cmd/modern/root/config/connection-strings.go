@@ -15,7 +15,6 @@ import (
 	"github.com/microsoft/go-sqlcmd/internal/cmdparser"
 	"github.com/microsoft/go-sqlcmd/internal/config"
 	"github.com/microsoft/go-sqlcmd/internal/pal"
-	"github.com/microsoft/go-sqlcmd/internal/secret"
 )
 
 // ConnectionStrings implements the `sqlcmd config connection-strings` command
@@ -83,12 +82,13 @@ func (c *ConnectionStrings) run() {
 	}
 
 	if user != nil {
+		password := config.Password(*user, endpoint.EndpointDetails.Address, endpoint.EndpointDetails.Port)
 		for k, v := range connectionStringFormats {
 			if k == "GO" {
 				connectionStringFormats[k] = fmt.Sprintf(
 					v,
 					user.BasicAuth.Username,
-					secret.Decode(user.BasicAuth.Password, user.BasicAuth.PasswordEncryption),
+					password,
 					endpoint.EndpointDetails.Address,
 					endpoint.EndpointDetails.Port,
 					c.database,
@@ -100,7 +100,7 @@ func (c *ConnectionStrings) run() {
 				)
 
 				connectionStringFormats[k] = fmt.Sprintf(format,
-					secret.Decode(user.BasicAuth.Password, user.BasicAuth.PasswordEncryption),
+					password,
 					endpoint.EndpointDetails.Address,
 					endpoint.EndpointDetails.Port,
 					user.BasicAuth.Username,
@@ -111,7 +111,7 @@ func (c *ConnectionStrings) run() {
 					endpoint.EndpointDetails.Port,
 					c.database,
 					user.BasicAuth.Username,
-					secret.Decode(user.BasicAuth.Password, user.BasicAuth.PasswordEncryption),
+					password,
 					c.stringForBoolean(c.trustServerCertificate(endpoint), k))
 			}
 		}

@@ -45,6 +45,7 @@ func (c *Config) SubCommands() []cmdparser.Command {
 	dependencies := c.Dependencies()
 
 	return []cmdparser.Command{
+		cmdparser.New[*config.AutomicVault](dependencies),
 		cmdparser.New[*config.AddContext](dependencies),
 		cmdparser.New[*config.AddEndpoint](dependencies),
 		cmdparser.New[*config.AddUser](dependencies),

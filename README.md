@@ -339,3 +339,22 @@ Any use of third-party trademarks or logos are subject to those third-party's po
 [releases page]: https://github.com/microsoft/go-sqlcmd/releases/latest
 [go-mssqldb]: https://github.com/microsoft/go-mssqldb
 [go-sqlcmd-utility]: https://docs.microsoft.com/sql/tools/go-sqlcmd-utility
+# Automic Vault Fork Notes
+
+This repository is the Automic Vault fork of Microsoft's Go sqlcmd.
+
+Automic Vault is a macOS-first system that keeps developer credentials in
+custody and applies them only after policy or the user allows the complete
+operation requested by verified software.
+
+The [sqlcmd Hardener work](https://github.com/automic-vault/automic-vault/issues/186)
+keeps basic-auth passwords out of `~/.sqlcmd/sqlconfig`. This fork binds each
+password request to the selected sqlcmd user profile and endpoint through a
+direct Automic Vault request. Custom sqlconfig paths and unsupported
+authentication fail closed.
+
+Automic Vault's reviewed release process builds and signs the executable with
+Hardened Runtime and no entitlements. This source fork alone does not establish
+Hardened State. The remainder of this README is the original upstream README.
+
+---
