@@ -8,6 +8,8 @@ import (
 	"github.com/microsoft/go-sqlcmd/internal/pal"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
+	"os"
+	"path/filepath"
 )
 
 // Load loads the configuration from the file specified by the SetFileName() function.
@@ -38,6 +40,7 @@ func Save() {
 	if filename == "" {
 		panic("Must call config.SetFileName()")
 	}
+	validateBeforeSave()
 
 	if config.Version == "" {
 		config.Version = "v1"
@@ -47,8 +50,21 @@ func Save() {
 	checkErr(err)
 	err = viper.ReadConfig(bytes.NewReader(b))
 	checkErr(err)
-	err = viper.WriteConfig()
+	directory := filepath.Dir(filename)
+	temporary, err := os.CreateTemp(directory, ".sqlconfig-*.tmp")
 	checkErr(err)
+	temporaryName := temporary.Name()
+	defer os.Remove(temporaryName)
+	_, err = temporary.Write(b)
+	checkErr(err)
+	checkErr(temporary.Sync())
+	checkErr(temporary.Close())
+	checkErr(os.Rename(temporaryName, filename))
+	dir, err := os.Open(directory)
+	checkErr(err)
+	checkErr(dir.Sync())
+	checkErr(dir.Close())
+	trace("Config atomically saved to: %v"+pal.LineBreak(), filename)
 }
 
 // GetConfigFileUsed returns the path to the configuration file used by the Viper library.

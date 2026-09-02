@@ -2,11 +2,13 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/microsoft/go-sqlcmd/cmd/modern/sqlconfig"
 	"github.com/microsoft/go-sqlcmd/internal/automicvault"
 	"github.com/microsoft/go-sqlcmd/internal/secret"
+	"gopkg.in/yaml.v2"
 )
 
 var storeCredential = automicvault.Store
@@ -23,10 +25,13 @@ func Password(user User, address string, port int) string {
 }
 
 func prepareUser(user *User) {
-	if !automicvault.IsEnabled() || user.AuthenticationType != "basic" {
+	if !automicvault.IsEnabled() {
 		return
 	}
 	requireDefaultConfig()
+	if user.AuthenticationType != "basic" {
+		panic(fmt.Sprintf("unsupported sqlcmd authentication for user %q", user.Name))
+	}
 	if user.BasicAuth == nil {
 		panic("basic sqlcmd user has no authentication details")
 	}
@@ -73,6 +78,29 @@ func AutomicVaultStatus() (profiles []string, total int, hardened bool) {
 func requireDefaultConfig() {
 	if filepath.Clean(filename) != filepath.Clean(DefaultFileName()) {
 		panic("Automic Vault credentials require the default sqlconfig path")
+	}
+	info, err := os.Lstat(filename)
+	if err != nil {
+		panic(fmt.Sprintf("cannot inspect sqlconfig: %v", err))
+	}
+	if !info.Mode().IsRegular() || info.Size() > 1024*1024 {
+		panic("Automic Vault requires a regular sqlconfig no larger than 1 MiB")
+	}
+	contents, err := os.ReadFile(filename)
+	if err != nil {
+		panic(fmt.Sprintf("cannot read sqlconfig: %v", err))
+	}
+	var parsed Sqlconfig
+	if len(contents) != 0 {
+		if err := yaml.UnmarshalStrict(contents, &parsed); err != nil {
+			panic(fmt.Sprintf("unsupported sqlconfig structure: %v", err))
+		}
+	}
+}
+
+func validateBeforeSave() {
+	if automicvault.IsEnabled() {
+		requireDefaultConfig()
 	}
 }
 
