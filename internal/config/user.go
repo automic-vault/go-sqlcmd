@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	. "github.com/microsoft/go-sqlcmd/cmd/modern/sqlconfig"
+	"github.com/microsoft/go-sqlcmd/internal/automicvault"
 )
 
 // AddUser adds a new user to the configuration.
@@ -29,6 +30,7 @@ func AddUser(user User) (actualUserName string) {
 			panic("BasicAuth Username cannot be empty")
 		}
 	}
+	prepareUser(&user)
 
 	config.Users = append(config.Users, user)
 	Save()
@@ -42,8 +44,13 @@ func AddUser(user User) (actualUserName string) {
 func DeleteUser(name string) {
 	if UserNameExists(name) {
 		ordinal := userOrdinal(name)
+		managed := config.Users[ordinal].BasicAuth != nil &&
+			config.Users[ordinal].BasicAuth.PasswordEncryption == automicvault.Encryption
 		config.Users = append(config.Users[:ordinal], config.Users[ordinal+1:]...)
 		Save()
+		if managed {
+			automicvault.Forget(name)
+		}
 	}
 }
 

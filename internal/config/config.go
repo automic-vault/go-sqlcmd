@@ -162,6 +162,7 @@ func AddContextWithContainer(
 		},
 		Name: userName,
 	}
+	prepareUser(&user)
 
 	config.Users = append(config.Users, user)
 
@@ -179,10 +180,7 @@ func RedactedConfig(raw bool) (c Sqlconfig) {
 		user := c.Users[i]
 		if user.AuthenticationType == "basic" {
 			if raw {
-				user.BasicAuth.Password = decryptCallback(
-					user.BasicAuth.Password,
-					user.BasicAuth.PasswordEncryption,
-				)
+				user.BasicAuth.Password = Password(user, "", 0)
 			} else {
 				user.BasicAuth.Password = "REDACTED"
 			}

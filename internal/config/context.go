@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	. "github.com/microsoft/go-sqlcmd/cmd/modern/sqlconfig"
+	"github.com/microsoft/go-sqlcmd/internal/automicvault"
 )
 
 // AddContext adds the context to the sqlconfig file, and returns the context
@@ -104,10 +105,7 @@ func GetCurrentContextInfo() (server string, username string, password string) {
 	if user != nil && user.AuthenticationType == "basic" {
 		username = user.BasicAuth.Username
 		if user.AuthenticationType == "basic" {
-			password = decryptCallback(
-				user.BasicAuth.Password,
-				user.BasicAuth.PasswordEncryption,
-			)
+			password = Password(*user, endpoint.Address, endpoint.Port)
 		}
 	}
 	return
@@ -200,6 +198,7 @@ func SetCurrentContextName(name string) {
 // of the first remaining context.
 func RemoveCurrentContext() {
 	currentContextName := config.CurrentContext
+	managedProfile := ""
 
 	for ci, c := range config.Contexts {
 		if c.Name == currentContextName {
@@ -214,6 +213,9 @@ func RemoveCurrentContext() {
 
 			for ui, u := range config.Users {
 				if c.User != nil && u.Name == *c.User {
+					if u.BasicAuth != nil && u.BasicAuth.PasswordEncryption == automicvault.Encryption {
+						managedProfile = u.Name
+					}
 					config.Users = append(
 						config.Users[:ui],
 						config.Users[ui+1:]...)
@@ -232,6 +234,10 @@ func RemoveCurrentContext() {
 		config.CurrentContext = config.Contexts[0].Name
 	} else {
 		config.CurrentContext = ""
+	}
+	Save()
+	if managedProfile != "" {
+		automicvault.Forget(managedProfile)
 	}
 }
 

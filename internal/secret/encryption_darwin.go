@@ -3,7 +3,7 @@
 
 package secret
 
-var encryptionMethods = []string{"none"}
+var encryptionMethods = []string{"none", "av"}
 
 func encrypt(plainText string) (cipherText string) {
 
